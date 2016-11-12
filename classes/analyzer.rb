@@ -16,10 +16,10 @@ class Analyzer
   def perform
     ::CSV.foreach(@csv_file_address, skip_blanks: true).with_index do |row, i|
       process_row(row, i)
-      p '.'
-
-      # break if i > 300
+      # break if i > 400
     end
+
+    p @result_hash
   end
 
   protected
@@ -42,7 +42,7 @@ class Analyzer
 
     if row['second'] != @current_second['number']
       add_summary_for_current_second
-      analyze_posession(row, @current_second, @previous_second)
+      analyze_posession(row, @previous_second, @current_second)
       @previous_second = @current_second.dup
       @current_second = new_nested_hash
 
