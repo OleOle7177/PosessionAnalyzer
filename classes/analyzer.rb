@@ -3,8 +3,6 @@ require_relative 'posession_summary'
 require_relative 'data_extractor'
 require 'csv'
 
-require 'pry'
-
 class Analyzer
   include PosessionWriter
   include PosessionSummary
@@ -21,7 +19,6 @@ class Analyzer
   def perform
     ::CSV.foreach(@csv_file_address, skip_blanks: true).with_index do |row, i|
       process_row(row, i)
-      break if i > 500
     end
 
     count_posession_summary

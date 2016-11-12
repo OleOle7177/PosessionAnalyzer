@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 require_relative 'classes/analyzer'
 require_relative 'classes/hash_pretty_print'
-require 'pry'
 
 raise 'Wrong number of arguments, expected: 1' if ARGV.size != 1
 
