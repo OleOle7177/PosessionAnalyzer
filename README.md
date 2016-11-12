@@ -32,13 +32,14 @@ It looks like this:
       "dirty"=>true}
       }
     }
+  }
 ```
-number - number of current second,
-team_id_... - team_ids for given match,
-1, 2 - for each team_id value we have keys, containing:
-ball_distance - distance of closest player to the ball (calculated with simple
+'number' - number of current second,
+'team_id_...' - team_ids for given match,
+'1', '2' - for each team_id value we have keys, containing:
+'ball_distance' - distance of closest player to the ball (calculated with simple
   vector length formula) ,
-player_id - id of the player, closest to the ball
+'player_id' - id of the player, closest to the ball
 
 We store information about previous and current second only.
 
