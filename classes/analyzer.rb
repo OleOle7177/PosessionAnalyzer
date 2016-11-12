@@ -1,39 +1,25 @@
+require_relative 'posession_writer'
 require 'csv'
 require 'pry'
 
 class Analyzer
+  include PosessionWriter
 
   def initialize(csv_file_address)
     @csv_file_address = csv_file_address
-    # @current_second = {
-    #   number: nil,
-    #   ball_coords: nil,
-    #   team_1_id: nil,
-    #   team_2_id: nil,
-    #   team_1: {
-    #     id: {}
-    #     player_id: nil,
-    #     ball_distance: nil
-    #   },
-    #   team_2: {
-    #     player_id: nil,
-    #     ball_distance: nil
-    #   }
-    # }
     @previous_second = nil
     @current_second = new_nested_hash
 
-    @result_hash = {}
+    @result_hash = new_nested_hash
   end
 
   def perform
     ::CSV.foreach(@csv_file_address, skip_blanks: true).with_index do |row, i|
       process_row(row, i)
-      break if i > 60
-    end
+      p '.'
 
-    p @previous_second
-    p @current_second
+      # break if i > 300
+    end
   end
 
   protected
@@ -43,8 +29,10 @@ class Analyzer
       get_headers(row[0])
     else
       row_hash = Hash[@headers.zip get_data(row[0]).map(&:to_i)]
-      p row_hash
       extract_data(row_hash)
+
+      # @i = true if i == 196
+      # @row = row_hash if i == 196
     end
   end
 
@@ -54,11 +42,13 @@ class Analyzer
 
     if row['second'] != @current_second['number']
       add_summary_for_current_second
-      # проанализировать и назначить
-      analyze_posession(row) #if @previous_second
+      analyze_posession(row, @current_second, @previous_second)
+      @previous_second = @current_second.dup
       @current_second = new_nested_hash
-      @current_second['number'] = row['second']
-      @current_second['ball_coords'] = @previous_second['ball_coords']
+
+      initialize_current_second(row)
+
+      ####
     end
 
     if row['player_id'].zero?
@@ -66,10 +56,7 @@ class Analyzer
       @current_second['ball_coords']['x'] = row['x']
       @current_second['ball_coords']['y'] = row['y']
     else
-
       define_teams_keys(row)
-
-
       ball_distance = calculate_ball_distance(row['x'], row['y'])
       init_ball_distance_for_team(row)
 
@@ -83,18 +70,21 @@ class Analyzer
   # define team keys if they are not presented in second data
   def define_teams_keys(row)
     if !@current_second.has_key?('team_id_1')
-      @current_second['team_id_1'] = row['team_id']
+      @current_second['team_id_1'] = @result_hash['team_id_1'] = row['team_id']
     elsif (row['team_id'] != @current_second['team_id_1'] && !@current_second.has_key?('team_id_2'))
-      @current_second['team_id_2'] = row['team_id']
+      @current_second['team_id_2'] = @result_hash['team_id_2'] = row['team_id']
     end
   end
 
+
+#############
   def add_summary_for_current_second
+    @current_second['summary'] = nil
+
     first_dist = @current_second[@current_second['team_id_1']]['ball_distance']
     second_dist = @current_second[@current_second['team_id_2']]['ball_distance']
 
     posession = check_posession(first_dist, second_dist)
-    @current_second['summary'] = nil
 
     if posession
       team_id = @current_second['team_id_1']
@@ -103,6 +93,7 @@ class Analyzer
       team_id = @current_second['team_id_2'] if posession
     end
 
+    # binding.pry if (first_dist == 0.0) || (second_dist == 0.0)
     add_summary(team_id, posession) if team_id
   end
 
@@ -110,7 +101,7 @@ class Analyzer
     @current_second['summary'] = {
       'team_id' => team_id,
       'player_id' => @current_second[team_id]['player_id'],
-      'posession' => posession,
+      'posession' => posession
     }
   end
 
@@ -123,15 +114,13 @@ class Analyzer
       false
     end
   end
+#############
 
-  def dirty_posession(length1, length2)
 
-  end
 
-  def analyze_posession(row)
-    p 'TIME TO ANALYZE'
-    # if @current_second[row['team_id']] != @previous_second
-  end
+
+
+################
 
   def calculate_ball_distance(x, y)
      delta_x = @current_second['ball_coords']['x'] - x
@@ -145,6 +134,19 @@ class Analyzer
       @current_second[row['team_id']]['ball_distance'] = 500
     end
   end
+
+  # initialize new current second with start values
+  def initialize_current_second(row)
+    @current_second['number'] = row['second']
+    @current_second['team_id_1'] = @previous_second['team_id_1']
+    @current_second['team_id_2'] = @previous_second['team_id_2']
+
+    @current_second[@current_second['team_id_1']]['ball_distance'] = 500
+    @current_second[@current_second['team_id_2']]['ball_distance'] = 500
+
+    @current_second['ball_coords'] = @previous_second['ball_coords']
+  end
+
 
   def get_data(string)
     string&.split(";\"")&.map{ |x| x.chomp("\"") }
