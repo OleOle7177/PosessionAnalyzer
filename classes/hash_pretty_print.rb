@@ -9,11 +9,11 @@ class HashPrettyPrint
     p "TEAM_ID: #{team_id}"
     hash[team_id].each do |k, v|
       p "player_id: #{k}"
-      p "total posession summary: #{readable_time(v['sum_total_posession'])}:"
-      print_posession_intervals(v['total_posession'])
+      p "total possession summary: #{readable_time(v['sum_total_possession'])}:"
+      print_possession_intervals(v['total_possession'])
 
-      p "clean posession summary: #{readable_time(v['sum_clean_posession'])}:"
-      print_posession_intervals(v['clean_posession'])
+      p "clean possession summary: #{readable_time(v['sum_clean_possession'])}:"
+      print_possession_intervals(v['clean_possession'])
 
       puts
     end
@@ -21,7 +21,7 @@ class HashPrettyPrint
     puts
   end
 
-  def print_posession_intervals(data)
+  def print_possession_intervals(data)
     data.each do |time|
       p "#{readable_time(time[0])} - #{readable_time(time[1] + time[0])}"
     end

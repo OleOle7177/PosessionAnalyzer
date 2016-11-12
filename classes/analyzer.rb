@@ -1,11 +1,11 @@
-require_relative 'posession_writer'
-require_relative 'posession_summary'
+require_relative 'possession_writer'
+require_relative 'possession_summary'
 require_relative 'data_extractor'
 require 'csv'
 
 class Analyzer
-  include PosessionWriter
-  include PosessionSummary
+  include PossessionWriter
+  include PossessionSummary
   include DataExtractor
 
   def initialize(csv_file_address)
@@ -21,7 +21,7 @@ class Analyzer
       process_row(row, i)
     end
 
-    count_posession_summary
+    count_possession_summary
   end
 
   protected
@@ -73,7 +73,7 @@ class Analyzer
     Hash.new { |h, k| h[k] = Hash.new(&h.default_proc) }
   end
 
-  def count_posession_summary
+  def count_possession_summary
     count_summary_for_team(@result_hash['team_id_1'])
     count_summary_for_team(@result_hash['team_id_2'])
 
@@ -82,19 +82,19 @@ class Analyzer
 
   def count_summary_for_team(team_id)
     @result_hash[team_id].each do |k, v|
-      @result_hash[team_id][k]['sum_total_posession'] =
-        count_sum_posession('total_posession', v)
+      @result_hash[team_id][k]['sum_total_possession'] =
+        count_sum_possession('total_possession', v)
     end
 
     @result_hash[team_id].each do |k, v|
-      @result_hash[team_id][k]['sum_clean_posession'] =
-        count_sum_posession('clean_posession', v)
+      @result_hash[team_id][k]['sum_clean_possession'] =
+        count_sum_possession('clean_possession', v)
     end
   end
 
-  def count_sum_posession(posession_type, value)
+  def count_sum_possession(possession_type, value)
     sum = 0
-    value[posession_type].map{|r| sum += r[1]}
+    value[possession_type].map{|r| sum += r[1]}
     sum
   end
 

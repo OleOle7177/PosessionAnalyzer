@@ -5,7 +5,7 @@ module DataExtractor
 
     if row['second'] != @current_second['number']
       add_summary_for_current_second
-      analyze_posession(row)
+      analyze_possession(row)
       @previous_second = @current_second.dup
       @current_second = new_nested_hash
 
