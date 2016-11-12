@@ -1,7 +1,10 @@
 #!/usr/bin/env ruby
 require_relative 'classes/analyzer'
+require_relative 'classes/hash_pretty_print'
+require 'pry'
 
 raise 'Wrong number of arguments, expected: 1' if ARGV.size != 1
 
 result = Analyzer.new(ARGV[0]).perform
-p result
+
+HashPrettyPrint.new.analyzed_hash_print(result)

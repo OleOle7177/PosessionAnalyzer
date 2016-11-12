@@ -1,9 +1,14 @@
 require_relative 'posession_writer'
+require_relative 'posession_summary'
+require_relative 'data_extractor'
 require 'csv'
+
 require 'pry'
 
 class Analyzer
   include PosessionWriter
+  include PosessionSummary
+  include DataExtractor
 
   def initialize(csv_file_address)
     @csv_file_address = csv_file_address
@@ -16,10 +21,10 @@ class Analyzer
   def perform
     ::CSV.foreach(@csv_file_address, skip_blanks: true).with_index do |row, i|
       process_row(row, i)
-      # break if i > 400
+      break if i > 500
     end
 
-    p @result_hash
+    count_posession_summary
   end
 
   protected
@@ -30,40 +35,6 @@ class Analyzer
     else
       row_hash = Hash[@headers.zip get_data(row[0]).map(&:to_i)]
       extract_data(row_hash)
-
-      # @i = true if i == 196
-      # @row = row_hash if i == 196
-    end
-  end
-
-  def extract_data(row)
-    # if row['second'] != @current_second['number'] || !@current_second.has_key
-    @current_second['number'] = row['second'] unless @current_second.has_key?('number')
-
-    if row['second'] != @current_second['number']
-      add_summary_for_current_second
-      analyze_posession(row, @previous_second, @current_second)
-      @previous_second = @current_second.dup
-      @current_second = new_nested_hash
-
-      initialize_current_second(row)
-
-      ####
-    end
-
-    if row['player_id'].zero?
-      #присвоить координаты мяча в каррент секонд
-      @current_second['ball_coords']['x'] = row['x']
-      @current_second['ball_coords']['y'] = row['y']
-    else
-      define_teams_keys(row)
-      ball_distance = calculate_ball_distance(row['x'], row['y'])
-      init_ball_distance_for_team(row)
-
-      if @current_second[row['team_id']]['ball_distance'] > ball_distance
-        @current_second[row['team_id']]['ball_distance'] = ball_distance
-        @current_second[row['team_id']]['player_id'] = row['player_id']
-      end
     end
   end
 
@@ -75,52 +46,6 @@ class Analyzer
       @current_second['team_id_2'] = @result_hash['team_id_2'] = row['team_id']
     end
   end
-
-
-#############
-  def add_summary_for_current_second
-    @current_second['summary'] = nil
-
-    first_dist = @current_second[@current_second['team_id_1']]['ball_distance']
-    second_dist = @current_second[@current_second['team_id_2']]['ball_distance']
-
-    posession = check_posession(first_dist, second_dist)
-
-    if posession
-      team_id = @current_second['team_id_1']
-    else
-      posession = check_posession(second_dist, first_dist)
-      team_id = @current_second['team_id_2'] if posession
-    end
-
-    # binding.pry if (first_dist == 0.0) || (second_dist == 0.0)
-    add_summary(team_id, posession) if team_id
-  end
-
-  def add_summary(team_id, posession)
-    @current_second['summary'] = {
-      'team_id' => team_id,
-      'player_id' => @current_second[team_id]['player_id'],
-      'posession' => posession
-    }
-  end
-
-  def check_posession(length1, length2)
-    if length1 < 1 && (1..4).member?(length2)
-      { 'clean' => false, 'dirty' => true }
-    elsif length1 < 1 && length2 > 4
-      { 'clean' => true, 'dirty' => false }
-    else
-      false
-    end
-  end
-#############
-
-
-
-
-
-################
 
   def calculate_ball_distance(x, y)
      delta_x = @current_second['ball_coords']['x'] - x
@@ -147,17 +72,33 @@ class Analyzer
     @current_second['ball_coords'] = @previous_second['ball_coords']
   end
 
-
-  def get_data(string)
-    string&.split(";\"")&.map{ |x| x.chomp("\"") }
-  end
-
-  def get_headers(string)
-    @headers = get_data(string)
-  end
-
   def new_nested_hash
     Hash.new { |h, k| h[k] = Hash.new(&h.default_proc) }
+  end
+
+  def count_posession_summary
+    count_summary_for_team(@result_hash['team_id_1'])
+    count_summary_for_team(@result_hash['team_id_2'])
+
+    @result_hash
+  end
+
+  def count_summary_for_team(team_id)
+    @result_hash[team_id].each do |k, v|
+      @result_hash[team_id][k]['sum_total_posession'] =
+        count_sum_posession('total_posession', v)
+    end
+
+    @result_hash[team_id].each do |k, v|
+      @result_hash[team_id][k]['sum_clean_posession'] =
+        count_sum_posession('clean_posession', v)
+    end
+  end
+
+  def count_sum_posession(posession_type, value)
+    sum = 0
+    value[posession_type].map{|r| sum += r[1]}
+    sum
   end
 
 end
